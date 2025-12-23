@@ -9,14 +9,16 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 
 export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
+    // Catch any errors thrown by the Layout component.
+    ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: '(tabs)',
 };
+
+import { useStore } from '@/store';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -27,6 +29,8 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
+  const { checkDailyReset } = useStore();
+
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
@@ -34,6 +38,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
+      checkDailyReset();
       SplashScreen.hideAsync();
     }
   }, [loaded]);

@@ -5,12 +5,14 @@ import { WalletSlice } from './walletSlice';
 
 interface TaskState {
   tasks: Task[];
+  lastOpenDate: string | null;
 }
 
 interface TaskActions {
-  addTask: (title: string, difficulty: TaskDifficulty) => void;
+  addTask: (title: string, difficulty: TaskDifficulty, schedule: number[]) => void;
   removeTask: (id: string) => void;
   toggleTask: (id: string) => void;
+  checkDailyReset: () => void;
 }
 
 export type TaskSlice = TaskState & TaskActions;
@@ -29,7 +31,8 @@ export const createTaskSlice: StateCreator<
   TaskSlice
 > = (set, get) => ({
   tasks: [],
-  addTask: (title, difficulty) =>
+  lastOpenDate: null,
+  addTask: (title, difficulty, schedule) =>
     set((state) => ({
       tasks: [
         ...state.tasks,
@@ -39,6 +42,7 @@ export const createTaskSlice: StateCreator<
           difficulty,
           completed: false,
           type: 'manual',
+          schedule,
           createdAt: Date.now(),
         },
       ],
@@ -67,12 +71,18 @@ export const createTaskSlice: StateCreator<
     if (isCompleting) {
       get().addTime(reward);
     } else {
-      // Refund logic if unchecked (prevent infinite loop exploit if rules change, but for now strict reverse)
-      // We assume consumeTime returns boolean, here we just force consume/deduct
-      // Since consumeTime checks balance, if user spent it, they might go to 0 or we force negative?
-      // For MVP safely, we try to consume. If fail, well, free money loophole closed by honor system for now.
-      // Better: addTime accepts negative handling or we use consumeTime.
       get().consumeTime(reward); 
+    }
+  },
+  checkDailyReset: () => {
+    const { lastOpenDate, tasks } = get();
+    const today = new Date().toISOString().split('T')[0];
+
+    if (lastOpenDate !== today) {
+      set((state) => ({
+        lastOpenDate: today,
+        tasks: state.tasks.map((t) => ({ ...t, completed: false })),
+      }));
     }
   },
 });

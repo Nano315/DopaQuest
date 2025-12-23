@@ -5,7 +5,9 @@ import { useStore } from '@/store';
 import { Task, TaskDifficulty } from '@/types/task';
 import { FontAwesome } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+
+const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sunday to Saturday
 
 export default function TasksScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -15,12 +17,22 @@ export default function TasksScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDifficulty, setNewTaskDifficulty] = useState<TaskDifficulty>('medium');
+  const [newTaskSchedule, setNewTaskSchedule] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]); // Default all days
 
   const handleAddTask = () => {
     if (newTaskTitle.trim()) {
-      addTask(newTaskTitle, newTaskDifficulty);
+      addTask(newTaskTitle, newTaskDifficulty, newTaskSchedule);
       setNewTaskTitle('');
+      setNewTaskSchedule([0, 1, 2, 3, 4, 5, 6]);
       setModalVisible(false);
+    }
+  };
+
+  const toggleDay = (index: number) => {
+    if (newTaskSchedule.includes(index)) {
+      setNewTaskSchedule(newTaskSchedule.filter(d => d !== index));
+    } else {
+      setNewTaskSchedule([...newTaskSchedule, index].sort());
     }
   };
 
@@ -66,7 +78,7 @@ export default function TasksScreen() {
         }
       />
 
-      {/* FAB to Add Task */}
+      {/* FAB */}
       <Pressable 
         style={[styles.fab, { backgroundColor: colors.serenity }]}
         onPress={() => setModalVisible(true)}
@@ -81,8 +93,13 @@ export default function TasksScreen() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalOverlay}
+        >
           <View style={[styles.modalView, { backgroundColor: colors.cardBackground }]}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+            
             <Text style={[styles.modalTitle, { color: colors.text }]}>New Quest</Text>
             
             <TextInput
@@ -94,6 +111,7 @@ export default function TasksScreen() {
               autoFocus
             />
 
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Difficulty</Text>
             <View style={styles.difficultyContainer}>
               {(['easy', 'medium', 'hard'] as TaskDifficulty[]).map((diff) => (
                 <Pressable
@@ -115,6 +133,29 @@ export default function TasksScreen() {
               ))}
             </View>
 
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Recurrence</Text>
+            <View style={styles.daysContainer}>
+                {DAYS.map((day, index) => {
+                    const isSelected = newTaskSchedule.includes(index);
+                    return (
+                        <Pressable 
+                            key={index} 
+                            style={[
+                                styles.dayCircle, 
+                                { borderColor: colors.borderColor },
+                                isSelected && { backgroundColor: colors.serenity, borderColor: colors.serenity }
+                            ]}
+                            onPress={() => toggleDay(index)}
+                        >
+                            <Text style={[
+                                styles.dayText,
+                                { color: isSelected ? '#fff' : colors.text }
+                            ]}>{day}</Text>
+                        </Pressable>
+                    );
+                })}
+            </View>
+
             <View style={styles.modalActions}>
               <Pressable style={[styles.modalBtn]} onPress={() => setModalVisible(false)}>
                 <Text style={{ color: colors.text }}>Cancel</Text>
@@ -123,8 +164,10 @@ export default function TasksScreen() {
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>Create</Text>
               </Pressable>
             </View>
+            
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -198,6 +241,7 @@ const styles = StyleSheet.create({
   modalView: {
     borderRadius: 20,
     padding: 24,
+    maxHeight: '80%', // Limit height
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -218,10 +262,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontSize: 16,
   },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 10,
+    opacity: 0.8,
+  },
   difficultyContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   diffButton: {
     flex: 1,
@@ -234,6 +284,23 @@ const styles = StyleSheet.create({
   diffText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  daysContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+  },
+  dayCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+  },
+  dayText: {
+      fontSize: 12,
+      fontWeight: '600',
   },
   modalActions: {
     flexDirection: 'row',

@@ -7,6 +7,6 @@ export interface Task {
   difficulty: TaskDifficulty;
   completed: boolean;
   type: TaskType;
-  schedule?: string[]; // Days of the week, optional for now
+  schedule?: number[]; // Days of the week (0=Sunday, 1=Monday...)
   createdAt: number;
 }
